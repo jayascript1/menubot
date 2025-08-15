@@ -4,7 +4,7 @@
     "slug": "menubot",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/menubot-logo.png",
+    "icon": "./assets/menubot-logo.jpg",
     "userInterfaceStyle": "dark",
     "assetBundlePatterns": [
       "**/*"
@@ -18,7 +18,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/menubot-logo.png",
+      "favicon": "./assets/menubot-logo.jpg",
       "bundler": "webpack"
     },
     "plugins": [

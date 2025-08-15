@@ -122,20 +122,6 @@ function getApiKey(): string | null {
     console.log('❌ Error accessing build-time global:', e);
   }
   
-  // Try to get from MenuBotConfig (our custom config file)
-  try {
-    if (typeof window !== 'undefined' && (window as any).MenuBotConfig?.OPENAI_API_KEY) {
-      const configKey = (window as any).MenuBotConfig.OPENAI_API_KEY;
-      console.log('MenuBotConfig.OPENAI_API_KEY:', configKey ? 'Found (length: ' + configKey.length + ')' : 'Not found');
-      if (configKey && String(configKey).trim()) {
-        console.log('✅ API key found in MenuBotConfig');
-        return String(configKey).trim();
-      }
-    }
-  } catch (e) {
-    console.log('❌ Error accessing MenuBotConfig:', e);
-  }
-  
   console.log('❌ No API key found in any source');
   return null;
 }
