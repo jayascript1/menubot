@@ -1043,7 +1043,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                 </TouchableOpacity>
                 
                 <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20 }}>
-                  What you'll hear: A personalized audio summary explaining why each menu item was recommended, including total calories, nutrition benefits, and breakdown to help you make the healthiest choice for your current hunger level.
+                  What you'll hear: A personalized audio summary explaining the most recommended pairing, including total calories, nutrition benefits, and breakdown to help you make the healthiest choice for your current hunger level.
                 </Text>
               </View>
             </View>
