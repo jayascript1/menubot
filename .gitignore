@@ -71,3 +71,4 @@ web-build/
 # API keys (never commit these!)
 *.key
 api-keys.json
+.vercel

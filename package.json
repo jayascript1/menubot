@@ -12,7 +12,6 @@
     "test": "jest"
   },
   "dependencies": {
-    "@expo/webpack-config": "^19.0.0",
     "dotenv": "^17.2.1",
     "expo": "~49.0.13",
     "expo-av": "~13.4.1",
@@ -21,7 +20,9 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.72.10",
-    "react-native-web": "~0.19.12"
+    "react-native-web": "~0.19.12",
+    "vercel": "^45.0.9",
+    "@expo/webpack-config": "^19.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -55,23 +55,88 @@ const TTS_MODEL = 'gpt-4o-mini-tts'; // documented TTS model; swap if you have a
 // Helper to format GBP £
 export const gbp = (n: number | undefined) => (typeof n === 'number' && !isNaN(n) ? `£${n.toFixed(2)}` : '—');
 
-// Resolve API key from (1) UI input, (2) environment variables, (3) fallback
-function getApiKey(manualKey: string | null): string | null {
-  if (manualKey && manualKey.trim()) return manualKey.trim();
+// Resolve API key from environment variables and localStorage (completely hidden from users)
+function getApiKey(): string | null {
+  console.log('🔍 Searching for API key...');
   
   // Try to get from environment variables
   try {
     // For web builds, Expo automatically loads EXPO_PUBLIC_* variables
     const envKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-    if (envKey && String(envKey).trim()) return String(envKey).trim();
+    console.log('process.env.EXPO_PUBLIC_OPENAI_API_KEY:', envKey ? 'Found (length: ' + envKey.length + ')' : 'Not found');
+    if (envKey && String(envKey).trim()) {
+      console.log('✅ API key found in process.env');
+      return String(envKey).trim();
+    }
   } catch (e) {
-    // Ignore errors in environments where process.env is not available
+    console.log('❌ Error accessing process.env:', e);
   }
   
-  // Fallback for other environments
-  const globalKey = (globalThis as any)?.EXPO_PUBLIC_OPENAI_API_KEY;
-  if (globalKey && String(globalKey).trim()) return String(globalKey).trim();
+  // Try to get from global scope (for web builds)
+  try {
+    const globalKey = (globalThis as any)?.EXPO_PUBLIC_OPENAI_API_KEY;
+    console.log('globalThis.EXPO_PUBLIC_OPENAI_API_KEY:', globalKey ? 'Found (length: ' + globalKey.length + ')' : 'Not found');
+    if (globalKey && String(globalKey).trim()) {
+      console.log('✅ API key found in global scope');
+      return String(globalKey).trim();
+    }
+  } catch (e) {
+    console.log('❌ Error accessing global scope:', e);
+  }
   
+  // Try to get from window object (for web builds)
+  try {
+    if (typeof window !== 'undefined' && (window as any).EXPO_PUBLIC_OPENAI_API_KEY) {
+      const windowKey = (window as any).EXPO_PUBLIC_OPENAI_API_KEY;
+      console.log('window.EXPO_PUBLIC_OPENAI_API_KEY:', windowKey ? 'Found (length: ' + windowKey.length + ')' : 'Not found');
+      if (windowKey && String(windowKey).trim()) {
+        console.log('✅ API key found in window object');
+        return String(windowKey).trim();
+      }
+    }
+  } catch (e) {
+    console.log('❌ Error accessing window object:', e);
+  }
+  
+  // Try to get from localStorage as a fallback (but keep it hidden)
+  try {
+    const localKey = localStorage.getItem('menubot_api_key');
+    console.log('localStorage menubot_api_key:', localKey ? 'Found (length: ' + localKey.length + ')' : 'Not found');
+    if (localKey && localKey.trim()) {
+      console.log('✅ API key found in localStorage');
+      return localKey.trim();
+    }
+  } catch (e) {
+    console.log('❌ Error accessing localStorage:', e);
+  }
+  
+  // Try to get from any other possible sources
+  try {
+    // Check if it's available in the build process
+    const buildTimeKey = (globalThis as any)?.__EXPO_PUBLIC_OPENAI_API_KEY__;
+    if (buildTimeKey) {
+      console.log('✅ API key found in build-time global');
+      return buildTimeKey;
+    }
+  } catch (e) {
+    console.log('❌ Error accessing build-time global:', e);
+  }
+  
+  // Try to get from MenuBotConfig (our custom config file)
+  try {
+    if (typeof window !== 'undefined' && (window as any).MenuBotConfig?.OPENAI_API_KEY) {
+      const configKey = (window as any).MenuBotConfig.OPENAI_API_KEY;
+      console.log('MenuBotConfig.OPENAI_API_KEY:', configKey ? 'Found (length: ' + configKey.length + ')' : 'Not found');
+      if (configKey && String(configKey).trim()) {
+        console.log('✅ API key found in MenuBotConfig');
+        return String(configKey).trim();
+      }
+    }
+  } catch (e) {
+    console.log('❌ Error accessing MenuBotConfig:', e);
+  }
+  
+  console.log('❌ No API key found in any source');
   return null;
 }
 
@@ -146,41 +211,23 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
-  const [manualKey, setManualKey] = useState<string>('');
   const [hungerLevel, setHungerLevel] = useState<HungerLevel>('moderate');
-  const [showDevSetup, setShowDevSetup] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
   
-  // Initialize with environment variable if available
+  // Automatically load and store API key in localStorage (completely hidden from users)
   React.useEffect(() => {
-    const envKey = getApiKey(null);
-    if (envKey) {
-      setManualKey(envKey);
-    }
-    
-    // Load saved API key from local storage
     try {
-      const savedKey = localStorage.getItem('menubot_api_key');
-      if (savedKey && !envKey) {
-        setManualKey(savedKey);
+      const apiKey = getApiKey();
+      if (apiKey) {
+        // Store the API key in localStorage for future use (hidden from users)
+        localStorage.setItem('menubot_api_key', apiKey);
       }
     } catch (e) {
-      // Local storage not available (e.g., in some mobile environments)
-      console.log('Local storage not available');
+      // Silently ignore any errors - users should never see this
+      console.log('API key loading handled automatically');
     }
   }, []);
   
-  // Save API key to local storage
-  const saveApiKey = (key: string) => {
-    try {
-      localStorage.setItem('menubot_api_key', key);
-      setManualKey(key);
-    } catch (e) {
-      console.log('Could not save to local storage');
-      setManualKey(key);
-    }
-  };
-
   // Generate accurate dietary information based on actual menu data
   const generateDietaryInfo = (items: MenuItem[]) => {
     if (!items || items.length === 0) {
@@ -404,14 +451,39 @@ export default function App() {
     }
   };
 
+  const uploadImage = async () => {
+    setError(null);
+    try {
+      const ImagePicker: any = await import(/* webpackIgnore: true */ 'expo-image-picker');
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        setError('Media library permission is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ 
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8, 
+        base64: true 
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        setImageUri(asset.uri);
+        setImageBase64(asset.base64 ?? null);
+        setAnalysis(null);
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Image picker failed to load.');
+    }
+  };
+
   const analyseMenu = async () => {
     if (!imageBase64) {
       setError('No image data found — try again and allow base64.');
       return;
     }
-    const key = getApiKey(manualKey);
+    const key = getApiKey();
     if (!key) {
-      setError('OpenAI API key not set. Paste it in the field below or define EXPO_PUBLIC_OPENAI_API_KEY.');
+      setError('OpenAI API key not configured. Please contact support.');
       return;
     }
     try {
@@ -510,7 +582,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
   };
 
   const speak = async (text: string) => {
-    const key = getApiKey(manualKey);
+    const key = getApiKey();
     if (!key || !text) return;
     try {
       setSpeaking(true);
@@ -551,26 +623,6 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
     }
   };
 
-  // Offline mock analysis (no network) for demos or missing key
-  const runMockAnalysis = () => {
-    const mock: Analysis = {
-      items: [
-        { name: 'Grilled Chicken Bowl', description: 'Brown rice, broccoli, salsa', price: 11.5, calories: 520, protein_g: 46, carbs_g: 48, fat_g: 16 },
-        { name: 'Salmon Salad', description: 'Leafy greens, avocado, vinaigrette', price: 13.0, calories: 450, protein_g: 34, carbs_g: 14, fat_g: 24 },
-        { name: 'Veggie Wrap', description: 'Hummus, peppers, spinach', price: 8.5, calories: 390, protein_g: 12, carbs_g: 58, fat_g: 10 },
-        { name: 'Cheesecake', description: 'Slice', price: 6.0, calories: 650, protein_g: 6, carbs_g: 60, fat_g: 40 },
-      ],
-      health_rank: [],
-      combos: [
-        { title: 'High-protein under £20', item_indices: [0, 2], rationale: 'Lean protein with a veg-forward side; filling, balanced.' },
-        { title: 'Pescatarian light', item_indices: [1], rationale: 'Omega-3s, greens, lower refined carbs.' },
-      ],
-      notes: 'Mock data for offline demo; nutrition is estimated.'
-    };
-    mock.health_rank = rankItems(mock.items);
-    setAnalysis(mock);
-  };
-
   const explanationText = useMemo(() => {
     if (!analysis) return '';
     const top = analysis.health_rank?.[0];
@@ -591,8 +643,6 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
 
     return `${choiceLine}\nEstimated nutrition: ${Math.round(summary.calories)} kcal; ${Math.round(summary.protein_g)}g protein, ${Math.round(summary.carbs_g)}g carbohydrates, ${Math.round(summary.fat_g)}g fats.\n${combo?.rationale || analysis.notes || ''}`;
   }, [analysis]);
-
-  const keyPresent = !!getApiKey(manualKey);
 
   // Theme colors
   const colors = {
@@ -624,7 +674,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
           {/* MenuBot Logo */}
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <Image 
-              source={require('./assets/menubot-logo.png')}
+              source={require('./assets/menubot-logo.jpg')}
               style={{ 
                 width: 80, 
                 height: 80, 
@@ -748,7 +798,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
               marginBottom: 16
             }}>
               <Text style={{ color: colors.textSecondary, fontSize: 16, textAlign: 'center' }}>
-                📷 Point your camera at a menu{'\n'}to capture and analyze
+                📷 Point your camera at a menu{'\n'}or 📁 upload an image to analyze
               </Text>
             </View>
           )}
@@ -770,6 +820,24 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
             >
               <Text style={{ fontSize: 18, color: 'white', fontWeight: '600' }}>📷</Text>
               <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Capture</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              onPress={uploadImage}
+              style={{
+                flex: 1,
+                backgroundColor: '#6c5ce7',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8
+              }}
+            >
+              <Text style={{ fontSize: 18, color: 'white', fontWeight: '600' }}>📁</Text>
+              <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Upload</Text>
             </TouchableOpacity>
             
             {imageUri && (
@@ -819,55 +887,6 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
             </Text>
           </View>
         </TouchableOpacity>
-
-        {/* Developer setup (hidden by default, can be toggled) */}
-        <View style={{ marginBottom: 16 }}>
-          <TouchableOpacity
-            onPress={() => setShowDevSetup(!showDevSetup)}
-            style={{ padding: 8, alignItems: 'center' }}
-          >
-            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>⚙️ Developer Options</Text>
-          </TouchableOpacity>
-          
-          {showDevSetup && (
-            <View style={{ borderWidth: 1, borderColor: '#253453', borderRadius: 12, padding: 12, backgroundColor: '#2c3e50' }}>
-              <Text style={{ color: '#c7d6f0', fontWeight: '700', marginBottom: 8 }}>Developer setup (local only)</Text>
-              <Text style={{ color: '#9fb3c8', marginBottom: 6 }}>OpenAI API key:</Text>
-              <TextInput
-                value={manualKey}
-                onChangeText={setManualKey}
-                placeholder="sk-..."
-                placeholderTextColor="#6c7a93"
-                secureTextEntry
-                autoCapitalize="none"
-                style={{ color: 'white', borderColor: '#274572', borderWidth: 1, borderRadius: 8, padding: 8, marginBottom: 8 }}
-              />
-              {getApiKey(null) && !manualKey && (
-                <Text style={{ color: '#a6e2ff', marginBottom: 8 }}>✓ API key loaded from environment variables</Text>
-              )}
-              {manualKey && !getApiKey(null) && (
-                <Text style={{ color: '#a6e2ff', marginBottom: 8 }}>✓ API key saved locally</Text>
-              )}
-              {!keyPresent && (
-                <Text style={{ color: '#f7c6c7', marginBottom: 8 }}>
-                  No key detected. You can still try <Text style={{ fontWeight: '700', color: 'white' }}>Mock analysis</Text> below.
-                </Text>
-              )}
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <SmallButton onPress={runMockAnalysis} label="Run Mock Analysis" />
-                <SmallButton onPress={() => saveApiKey(manualKey.trim())} label="Save Key" />
-                <SmallButton onPress={() => {
-                  try {
-                    localStorage.removeItem('menubot_api_key');
-                    setManualKey('');
-                  } catch (e) {
-                    setManualKey('');
-                  }
-                }} label="Clear Key" />
-              </View>
-            </View>
-          )}
-        </View>
 
         {/* Error Display */}
         {error && (
@@ -1002,9 +1021,9 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
               }}>
                 <TouchableOpacity
                   onPress={() => speak(explanationText)}
-                  disabled={speaking || !keyPresent}
+                  disabled={speaking || !getApiKey()}
                   style={{
-                    backgroundColor: speaking || !keyPresent ? (isDarkMode ? '#555555' : '#bdc3c7') : '#9b59b6',
+                    backgroundColor: speaking || !getApiKey() ? (isDarkMode ? '#555555' : '#bdc3c7') : '#9b59b6',
                     paddingVertical: 12,
                     paddingHorizontal: 20,
                     borderRadius: 12,

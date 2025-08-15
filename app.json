@@ -4,13 +4,8 @@
     "slug": "menubot",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/menubot-logo.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0b1220"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,12 +14,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0b1220"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/menubot-logo.png",
       "bundler": "webpack"
     },
     "plugins": [
