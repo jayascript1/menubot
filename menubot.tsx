@@ -58,10 +58,10 @@ export const gbp = (n: number | undefined) => (typeof n === 'number' && !isNaN(n
 // Resolve API key from environment variables and localStorage (completely hidden from users)
 function getApiKey(): string | null {
   console.log('🔍 Searching for API key...');
+  console.log('🌐 Browser Info:', navigator.userAgent);
   
-  // Try to get from environment variables
+  // Try to get from environment variables (webpack-injected)
   try {
-    // For web builds, Expo automatically loads EXPO_PUBLIC_* variables
     const envKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
     console.log('process.env.EXPO_PUBLIC_OPENAI_API_KEY:', envKey ? 'Found (length: ' + envKey.length + ')' : 'Not found');
     if (envKey && String(envKey).trim()) {
@@ -72,7 +72,7 @@ function getApiKey(): string | null {
     console.log('❌ Error accessing process.env:', e);
   }
   
-  // Try to get from global scope (for web builds)
+  // Try to get from global scope (webpack-injected)
   try {
     const globalKey = (globalThis as any)?.EXPO_PUBLIC_OPENAI_API_KEY;
     console.log('globalThis.EXPO_PUBLIC_OPENAI_API_KEY:', globalKey ? 'Found (length: ' + globalKey.length + ')' : 'Not found');
@@ -84,7 +84,7 @@ function getApiKey(): string | null {
     console.log('❌ Error accessing global scope:', e);
   }
   
-  // Try to get from window object (for web builds)
+  // Try to get from window object (webpack-injected)
   try {
     if (typeof window !== 'undefined' && (window as any).EXPO_PUBLIC_OPENAI_API_KEY) {
       const windowKey = (window as any).EXPO_PUBLIC_OPENAI_API_KEY;
@@ -104,7 +104,7 @@ function getApiKey(): string | null {
     console.log('localStorage menubot_api_key:', localKey ? 'Found (length: ' + localKey.length + ')' : 'Not found');
     if (localKey && localKey.trim()) {
       console.log('✅ API key found in localStorage');
-      return localKey.trim();
+      return String(localKey).trim();
     }
   } catch (e) {
     console.log('❌ Error accessing localStorage:', e);
@@ -123,6 +123,7 @@ function getApiKey(): string | null {
   }
   
   console.log('❌ No API key found in any source');
+  console.log('🔧 This might be a browser compatibility issue. Check console for details.');
   return null;
 }
 
