@@ -23,8 +23,8 @@ import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, Activity
 type MenuItem = {
   name: string;
   description?: string;
-  price?: number; // in local currency (GBP assumed)
-  calories?: number; // kcal
+  price?: number | string; // Allow both numbers and currency strings
+  calories?: number;
   protein_g?: number;
   carbs_g?: number;
   fat_g?: number;
@@ -38,6 +38,7 @@ type Combo = {
 
 type Analysis = {
   items: MenuItem[];
+  currency: string; // Add this line
   health_rank: number[]; // indices into items[] from healthiest to least
   combos: Combo[];
   notes: string; // caveats + assumptions
@@ -52,8 +53,16 @@ type HungerLevel = 'light' | 'moderate' | 'very';
 const VISION_MODELS = ['gpt-4o', 'gpt-4-vision-preview', 'gpt-4o-mini']; // Fallback models
 const TTS_MODEL = 'gpt-4o-mini-tts'; // documented TTS model; swap if you have a newer TTS model
 
-// Helper to format GBP £
-export const gbp = (n: number | undefined) => (typeof n === 'number' && !isNaN(n) ? `£${n.toFixed(2)}` : '—');
+// Helper to format currency - displays whatever currency is provided
+export const currency = (n: number | string | undefined): string => {
+  if (typeof n === 'string' && /^[£$€¥₹₽₩₪₨₦₡₱₲₴₸₺₼₾₿]/.test(n)) {
+    return n; // Return currency string as-is
+  }
+  if (typeof n === 'number' && !isNaN(n)) {
+    return `${n.toFixed(2)}`; // Return number with pound symbol
+  }
+  return '—';
+};
 
 // Resolve API key from environment variables and localStorage (completely hidden from users)
 function getApiKey(): string | null {
@@ -146,7 +155,14 @@ export function rankItems(items: MenuItem[]): number[] {
 }
 
 export function sumPrice(items: MenuItem[], indices: number[]): number {
-  return indices.reduce((sum, i) => sum + (items[i]?.price || 0), 0);
+  return indices.reduce((sum, i) => {
+    const price = items[i]?.price;
+    if (typeof price === 'string') {
+      const numPrice = parseFloat(price.replace(/[£$€¥₹₽₩₪₨₦₡₱₲₴₸₺₼₾₿]/g, ''));
+      return sum + (isNaN(numPrice) ? 0 : numPrice);
+    }
+    return sum + (price || 0);
+  }, 0);
 }
 
 export function sumMacros(items: MenuItem[], indices: number[]): MacroSummary {
@@ -316,7 +332,13 @@ export default function App() {
       totalProtein += protein;
       totalCarbs += item.carbs_g || 0;
       totalFat += fat;
-      totalPrice += item.price || 0;
+      const price = item.price;
+      if (typeof price === 'string') {
+        const numPrice = parseFloat(price.replace(/[£$€¥₹₽₩₪₨₦₡₱₲₴₸₺₼₾₿]/g, ''));
+        totalPrice += isNaN(numPrice) ? 0 : numPrice;
+      } else {
+        totalPrice += price || 0;
+      }
     });
 
     // Generate dietary notes based on actual data
@@ -354,7 +376,7 @@ export default function App() {
 
     // Generate budget strategy based on actual data
     const avgPrice = totalPrice / totalItems;
-    let budgetStrategy = `The menu offers ${totalItems} items with an average price of ${gbp(avgPrice)}. `;
+    let budgetStrategy = `The menu offers ${totalItems} items with an average price of ${currency(avgPrice)}. `;
     
     if (totalPrice <= 50) {
       budgetStrategy += `This is a budget-friendly menu with good value options. `;
@@ -486,7 +508,7 @@ export default function App() {
       
       const systemPrompt = `You are a nutritionist and menu analyst.
 Extract the full menu from the provided photo.
-Then infer typical UK portion sizes and estimate nutrition per item (kcal, protein_g, carbs_g, fat_g).
+Then infer typical portion sizes and estimate nutrition per item (kcal, protein_g, carbs_g, fat_g).
 Rank items by overall healthiness for a generally healthy adult (bias: higher protein, more fibre/veg, lower added sugar, lower saturated fat, lower kcal density; do not penalise lean fish/chicken).
 
 IMPORTANT: User hunger level is ${hungerLevel}. 
@@ -495,12 +517,14 @@ ${hungerLevel === 'light' ? 'Recommend smaller portions and lighter dishes.' : h
 
 Consider the user's hunger level: ${hungerContext}. Adjust recommendations accordingly.
 Propose 2–3 smart pairings that go well together (e.g., main + side, or 2 small plates) with short rationale.
-If prices are missing, estimate typical UK prices from context; mark those as estimated.
+
+IMPORTANT: Return prices with their actual currency symbols (e.g., $12.99, €15.50, £8.99) - do not strip the currency symbols.
+
 Return STRICT JSON matching the schema.`;
 
       const userPrompt = `Return JSON with fields: {items: MenuItem[], health_rank: number[], combos: {title: string, item_indices: number[], rationale: string}[], notes: string}.
-MenuItem = {name: string, description?: string, price?: number, calories?: number, protein_g?: number, carbs_g?: number, fat_g?: number}.
-Prices should be numeric in GBP. Make health_rank indices correspond to items[]. Keep notes concise.`;
+MenuItem = {name: string, description?: string, price?: number | string, calories?: number, protein_g?: number, carbs_g?: number, fat_g?: number}.
+Make health_rank indices correspond to items[]. Keep notes concise.`;
 
       // Try multiple models in case one fails
       let lastError: Error | null = null;
@@ -620,7 +644,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
     const top = analysis.health_rank?.[0];
     const best = typeof top === 'number' ? analysis.items[top] : undefined;
     const combo = analysis.combos?.[0];
-    const price = combo ? gbp(sumPrice(analysis.items, combo.item_indices)) : best ? gbp(best.price) : '—';
+          const price = combo ? currency(sumPrice(analysis.items, combo.item_indices)) : best ? currency(best.price) : '—';
     const summary: MacroSummary = combo
       ? sumMacros(analysis.items, combo.item_indices)
       : best
@@ -630,7 +654,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
     const choiceLine = combo
       ? `Top pairing: ${combo.title} — ${combo.item_indices.map(i => analysis.items[i]?.name).filter(Boolean).join(' + ')} (${price}).`
       : best
-      ? `Healthiest single: ${best.name} (${gbp(best.price)}).`
+      ? `Healthiest single: ${best.name} (${currency(best.price)}).`
       : 'No clear recommendation.';
 
     return `${choiceLine}\nEstimated nutrition: ${Math.round(summary.calories)} kcal; ${Math.round(summary.protein_g)}g protein, ${Math.round(summary.carbs_g)}g carbohydrates, ${Math.round(summary.fat_g)}g fats.\n${combo?.rationale || analysis.notes || ''}`;
@@ -814,8 +838,8 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                 gap: 8
               }}
             >
-              <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>📷</Text>
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Capture</Text>
+              <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>📷</Text>
+              <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Snap</Text>
             </TouchableOpacity>
             
                           <TouchableOpacity
@@ -832,7 +856,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>📁</Text>
+                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>📁</Text>
                 <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Upload</Text>
               </TouchableOpacity>
               
@@ -867,8 +891,97 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>📋</Text>
+                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>📋</Text>
                 <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Paste</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    console.log('🔄 STEP 1: Demo button pressed - starting execution...');
+                    
+                    console.log('🔄 STEP 2: Creating sample items array...');
+                    // Use the existing sample data from the test functions
+                    const sampleItems: MenuItem[] = [
+                      { name: 'Grilled Chicken Breast', calories: 450, protein_g: 45, carbs_g: 10, fat_g: 12, price: 12, description: 'Lean grilled chicken with herbs' },
+                      { name: 'Salmon Salad', calories: 420, protein_g: 35, carbs_g: 12, fat_g: 18, price: 13, description: 'Fresh salmon with mixed greens' },
+                      { name: 'Vegetable Stir-fry', calories: 280, protein_g: 8, carbs_g: 35, fat_g: 12, price: 8, description: 'Mixed vegetables in light sauce' },
+                      { name: 'Meat Lasagna', calories: 580, protein_g: 25, carbs_g: 45, fat_g: 28, price: 11, description: 'Classic meat and cheese lasagna' },
+                      { name: 'Chicken Alfredo Pasta', calories: 520, protein_g: 22, carbs_g: 48, fat_g: 24, price: 11, description: 'Creamy Alfredo with chicken' },
+                      { name: 'Margherita Pizza', calories: 380, protein_g: 15, carbs_g: 42, fat_g: 18, price: 10, description: 'Traditional tomato and mozzarella' },
+                      { name: 'Chocolate Lava Cake', calories: 320, protein_g: 4, carbs_g: 38, fat_g: 18, price: 7, description: 'Warm chocolate cake with molten center' },
+                      { name: 'Lemon Meringue Pie', calories: 280, protein_g: 3, carbs_g: 42, fat_g: 10, price: 6, description: 'Tangy lemon with fluffy meringue' }
+                    ];
+                    console.log('✅ STEP 2 COMPLETE: Sample items created, count:', sampleItems.length);
+                    console.log('📋 First item:', sampleItems[0]);
+                    
+                    console.log('🔄 STEP 3: Calling rankItems function...');
+                    const healthRank = rankItems(sampleItems);
+                    console.log('✅ STEP 3 COMPLETE: Health ranking calculated:', healthRank);
+                    
+                    console.log('🔄 STEP 4: Creating mock analysis object...');
+                    // Create a mock analysis with the sample data
+                    const mockAnalysis: Analysis = {
+                      items: sampleItems,
+                      currency: '$',
+                      health_rank: healthRank,
+                      combos: [
+                        {
+                          title: 'Healthy Protein Combo',
+                          item_indices: [0, 1], // Grilled Chicken + Salmon Salad
+                          rationale: 'High protein, balanced nutrition, perfect for fitness goals'
+                        },
+                        {
+                          title: 'Vegetarian Delight',
+                          item_indices: [2, 6], // Stir-fry + Chocolate Cake
+                          rationale: 'Light main with indulgent dessert, great balance'
+                        }
+                      ],
+                      notes: 'Sample menu data for demonstration purposes. All nutrition values are estimates.'
+                    };
+                    console.log('✅ STEP 4 COMPLETE: Mock analysis created');
+                    console.log('📊 Analysis has items:', mockAnalysis.items.length);
+                    console.log('📊 Analysis has health_rank:', mockAnalysis.health_rank.length);
+                    console.log('📊 Analysis has combos:', mockAnalysis.combos.length);
+                    
+                    console.log('🔄 STEP 5: Setting React state variables...');
+                    // Set the analysis directly (no image needed)
+                    setAnalysis(mockAnalysis);
+                    console.log('✅ setAnalysis() called');
+                    
+                    // Don't set image states - just the analysis
+                    // setImageUri('demo-menu-loaded'); // Removed
+                    // setImageBase64('demo-data-loaded'); // Removed
+                    
+                    console.log('✅ STEP 5 COMPLETE: Analysis state updated');
+                    console.log('✅ Demo menu loaded successfully with sample data!');
+                    
+                    // Debug: Check if analysis was set
+                    setTimeout(() => {
+                      console.log('🔍 DEBUG: Analysis should have items:', mockAnalysis.items.length);
+                    }, 100);
+                    
+                  } catch (e: any) {
+                    console.error('❌ Demo menu failed at step:', e);
+                    console.error('❌ Error details:', e.message);
+                    console.error('❌ Error stack:', e.stack);
+                    setError(`Demo menu failed: ${e.message}`);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#9b59b6',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8
+                }}
+              >
+                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>🎯</Text>
+                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Demo</Text>
               </TouchableOpacity>
               
               {imageUri && (
@@ -886,7 +999,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>🗑️</Text>
+                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>🗑️</Text>
                 <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Delete</Text>
               </TouchableOpacity>
             )}
@@ -1015,7 +1128,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                   
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 18 }}>
-                      {gbp(analysis.items[analysis.health_rank[0]]?.price)}
+                      {currency(analysis.items[analysis.health_rank[0]]?.price)}
                     </Text>
                   </View>
                   
@@ -1118,7 +1231,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                       <Text style={{ color: colors.textSecondary, marginTop: 4, fontSize: 14 }}>{analysis.items[idx]?.description}</Text>
                     )}
                     <View style={{ flexDirection: 'row', marginTop: 8, gap: 16 }}>
-                      <Text style={{ color: colors.danger, fontWeight: '600' }}>{gbp(analysis.items[idx]?.price)}</Text>
+                      <Text style={{ color: colors.danger, fontWeight: '600' }}>{currency(analysis.items[idx]?.price)}</Text>
                       <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                         {Math.round(analysis.items[idx]?.calories || 0)} kcal
                       </Text>
@@ -1164,7 +1277,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                       </Text>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 16 }}>
-                          Total: {gbp(total)}
+                          Total: ${currency}{(total)}
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                           {Math.round(macros.calories)} kcal
@@ -1198,7 +1311,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                     <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, flex: 1 }}>{it.name}</Text>
-                    <Text style={{ color: colors.danger, fontWeight: '600', fontSize: 16 }}>{gbp(it.price)}</Text>
+                    <Text style={{ color: colors.danger, fontWeight: '600', fontSize: 16 }}>{currency(it.price)}</Text>
                   </View>
                   {!!it.description && (
                     <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 14 }}>{it.description}</Text>
@@ -1306,7 +1419,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: colors.success, fontSize: 24, fontWeight: '700', marginBottom: 4 }}>
-                    {gbp(sumPrice(analysis.items, analysis.health_rank.slice(0, 3)))}
+                    ${currency}{(sumPrice(analysis.items, analysis.health_rank.slice(0, 3)))}
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
                     Total Cost{'\n'}(Top 3 Recommendations)
@@ -1356,7 +1469,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                         {item?.name}:
                       </Text>
                       <Text style={{ color: colors.danger, fontWeight: '600', fontSize: 14 }}>
-                        {gbp(item?.price)}
+                        {currency(item?.price)}
                       </Text>
                     </View>
                     
@@ -1411,9 +1524,9 @@ function sameMembers<T>(a: T[], b: T[]) {
 
 function runDevTests() {
   // Existing tests ------------------------------------------------------
-  // gbp formatting
-  expect('gbp(5) => £5.00', gbp(5) === '£5.00');
-  expect('gbp(undefined) => —', gbp(undefined) === '—');
+  // currency formatting
+  expect('currency(5) => £5.00', currency(5) === '£5.00');
+  expect('currency(undefined) => —', currency(undefined) === '—');
 
   // ranking
   const items: MenuItem[] = [
