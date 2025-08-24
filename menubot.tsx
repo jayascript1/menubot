@@ -962,7 +962,10 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 8
+                gap: 2,
+                overflow: 'hidden',
+                flexShrink: 1,
+                minWidth: 0 
               }}
             >
               <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>📷</Text>
@@ -980,7 +983,10 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8
+                  gap: 2,
+                  overflow: 'hidden',
+                  flexShrink: 1,
+                  minWidth: 0 
                 }}
               >
                 <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>📁</Text>
@@ -1015,7 +1021,10 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8
+                  gap: 2,
+                  overflow: 'hidden',
+                  flexShrink: 1,
+                  minWidth: 0 
                 }}
               >
                 <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>📋</Text>
@@ -1066,7 +1075,10 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8
+                  gap: 2,
+                  overflow: 'hidden',
+                  flexShrink: 1,
+                  minWidth: 0 
                 }}
               >
                 <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>🎯</Text>
@@ -1085,7 +1097,10 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8
+                  gap: 2,
+                  overflow: 'hidden',
+                  flexShrink: 1,
+                  minWidth: 0 
                 }}
               >
                 <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>🗑️</Text>
@@ -1097,7 +1112,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
 
 
                 {/* Hunger Level Selection */}
-                <View style={{ 
+        <View style={{ 
           backgroundColor: colors.card, 
           borderRadius: 16, 
           padding: 20, 
