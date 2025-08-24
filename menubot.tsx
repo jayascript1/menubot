@@ -1039,8 +1039,8 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                 gap: 8
               }}
             >
-              <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>📷</Text>
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Snap</Text>
+              <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>📷</Text>
+              <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>Snap</Text>
             </TouchableOpacity>
             
                           <TouchableOpacity
@@ -1057,8 +1057,8 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>📁</Text>
-                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Upload</Text>
+                <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>📁</Text>
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>Upload</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -1092,8 +1092,8 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>📋</Text>
-                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Paste</Text>
+                <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>📋</Text>
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>Paste</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -1143,8 +1143,8 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>🎯</Text>
-                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Demo</Text>
+                <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>🎯</Text>
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>Demo</Text>
               </TouchableOpacity>
               
               {imageUri && (
@@ -1162,8 +1162,8 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 10, color: 'white', fontWeight: '600' }}>🗑️</Text>
-                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Delete</Text>
+                <Text style={{ fontSize: 9, color: 'white', fontWeight: '600' }}>🗑️</Text>
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>Delete</Text>
               </TouchableOpacity>
             )}
           </View>
