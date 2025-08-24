@@ -488,6 +488,11 @@ export default function App() {
 Extract the full menu from the provided photo.
 Then infer typical UK portion sizes and estimate nutrition per item (kcal, protein_g, carbs_g, fat_g).
 Rank items by overall healthiness for a generally healthy adult (bias: higher protein, more fibre/veg, lower added sugar, lower saturated fat, lower kcal density; do not penalise lean fish/chicken).
+
+IMPORTANT: User hunger level is ${hungerLevel}. 
+${hungerLevel === 'light' ? 'Recommend smaller portions and lighter dishes.' : hungerLevel === 'very' ? 'Recommend larger portions and more filling dishes.' : 'Recommend balanced portions.'}
+
+
 Consider the user's hunger level: ${hungerContext}. Adjust recommendations accordingly.
 Propose 2–3 smart pairings that go well together (e.g., main + side, or 2 small plates) with short rationale.
 If prices are missing, estimate typical UK prices from context; mark those as estimated.
