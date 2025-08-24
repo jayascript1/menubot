@@ -59,7 +59,7 @@ export const currency = (n: number | string | undefined): string => {
     return n; // Return currency string as-is
   }
   if (typeof n === 'number' && !isNaN(n)) {
-    return `${n.toFixed(2)}`; // Return number with pound symbol
+    return `$${n.toFixed(2)}`; // Return number with dollar symbol
   }
   return '—';
 };
@@ -898,73 +898,78 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
               <TouchableOpacity
                 onPress={async () => {
                   try {
-                    console.log('🔄 STEP 1: Demo button pressed - starting execution...');
+                    console.log('🔄 STEP 1: Demo button pressed - loading mock menu image...');
                     
-                    console.log('🔄 STEP 2: Creating sample items array...');
-                    // Use the existing sample data from the test functions
+                    // Load the mock menu image from assets
+                    const mockImageUri = require('./assets/home-food-menu.jpg');
+                    console.log('✅ STEP 1 COMPLETE: Mock image loaded from assets');
+                    
+                    console.log('🔄 STEP 2: Converting image to base64...');
+                    // For demo purposes, we'll create a mock base64 string
+                    // In a real implementation, you'd convert the actual image
+                    const mockBase64 = 'mock-base64-data-for-demo';
+                    console.log('✅ STEP 2 COMPLETE: Mock base64 created');
+                    
+                    console.log('🔄 STEP 3: Setting image states...');
+                    setImageUri(mockImageUri);
+                    setImageBase64(mockBase64);
+                    console.log('✅ STEP 3 COMPLETE: Image states set');
+                    
+                    console.log('🔄 STEP 4: Creating sample menu items...');
+                    // Create realistic sample data that matches a typical menu
                     const sampleItems: MenuItem[] = [
-                      { name: 'Grilled Chicken Breast', calories: 450, protein_g: 45, carbs_g: 10, fat_g: 12, price: 12, description: 'Lean grilled chicken with herbs' },
-                      { name: 'Salmon Salad', calories: 420, protein_g: 35, carbs_g: 12, fat_g: 18, price: 13, description: 'Fresh salmon with mixed greens' },
-                      { name: 'Vegetable Stir-fry', calories: 280, protein_g: 8, carbs_g: 35, fat_g: 12, price: 8, description: 'Mixed vegetables in light sauce' },
-                      { name: 'Meat Lasagna', calories: 580, protein_g: 25, carbs_g: 45, fat_g: 28, price: 11, description: 'Classic meat and cheese lasagna' },
-                      { name: 'Chicken Alfredo Pasta', calories: 520, protein_g: 22, carbs_g: 48, fat_g: 24, price: 11, description: 'Creamy Alfredo with chicken' },
-                      { name: 'Margherita Pizza', calories: 380, protein_g: 15, carbs_g: 42, fat_g: 18, price: 10, description: 'Traditional tomato and mozzarella' },
-                      { name: 'Chocolate Lava Cake', calories: 320, protein_g: 4, carbs_g: 38, fat_g: 18, price: 7, description: 'Warm chocolate cake with molten center' },
-                      { name: 'Lemon Meringue Pie', calories: 280, protein_g: 3, carbs_g: 42, fat_g: 10, price: 6, description: 'Tangy lemon with fluffy meringue' }
+                      { name: 'Grilled Salmon with Quinoa', calories: 420, protein_g: 38, carbs_g: 25, fat_g: 18, price: 18, description: 'Fresh Atlantic salmon with herb quinoa and seasonal vegetables' },
+                      { name: 'Chicken Caesar Salad', calories: 380, protein_g: 32, carbs_g: 15, fat_g: 22, price: 14, description: 'Romaine lettuce, parmesan, croutons with light caesar dressing' },
+                      { name: 'Vegetarian Buddha Bowl', calories: 320, protein_g: 12, carbs_g: 45, fat_g: 14, price: 12, description: 'Brown rice, roasted vegetables, avocado, and tahini sauce' },
+                      { name: 'Beef Tenderloin Steak', calories: 580, protein_g: 45, carbs_g: 8, fat_g: 38, price: 28, description: '8oz grass-fed beef with garlic mashed potatoes' },
+                      { name: 'Mushroom Risotto', calories: 420, protein_g: 8, carbs_g: 68, fat_g: 16, price: 16, description: 'Creamy arborio rice with wild mushrooms and parmesan' },
+                      { name: 'Grilled Chicken Breast', calories: 350, protein_g: 42, carbs_g: 12, fat_g: 16, price: 15, description: 'Herb-marinated chicken with steamed broccoli' },
+                      { name: 'Chocolate Lava Cake', calories: 380, protein_g: 6, carbs_g: 45, fat_g: 20, price: 8, description: 'Warm chocolate cake with molten center and vanilla ice cream' },
+                      { name: 'Fresh Fruit Parfait', calories: 220, protein_g: 8, carbs_g: 38, fat_g: 6, price: 7, description: 'Greek yogurt with seasonal berries and granola' }
                     ];
-                    console.log('✅ STEP 2 COMPLETE: Sample items created, count:', sampleItems.length);
-                    console.log('📋 First item:', sampleItems[0]);
+                    console.log('✅ STEP 4 COMPLETE: Sample items created, count:', sampleItems.length);
                     
-                    console.log('🔄 STEP 3: Calling rankItems function...');
+                    console.log('🔄 STEP 5: Calculating health rankings...');
                     const healthRank = rankItems(sampleItems);
-                    console.log('✅ STEP 3 COMPLETE: Health ranking calculated:', healthRank);
+                    console.log('✅ STEP 5 COMPLETE: Health ranking calculated');
                     
-                    console.log('🔄 STEP 4: Creating mock analysis object...');
-                    // Create a mock analysis with the sample data
+                    console.log('🔄 STEP 6: Creating mock analysis...');
                     const mockAnalysis: Analysis = {
                       items: sampleItems,
                       currency: '$',
                       health_rank: healthRank,
                       combos: [
                         {
-                          title: 'Healthy Protein Combo',
-                          item_indices: [0, 1], // Grilled Chicken + Salmon Salad
-                          rationale: 'High protein, balanced nutrition, perfect for fitness goals'
+                          title: 'Protein Power Combo',
+                          item_indices: [0, 1], // Salmon + Chicken Salad
+                          rationale: 'High-quality protein sources with balanced nutrition, perfect for fitness goals'
                         },
                         {
-                          title: 'Vegetarian Delight',
-                          item_indices: [2, 6], // Stir-fry + Chocolate Cake
-                          rationale: 'Light main with indulgent dessert, great balance'
+                          title: 'Vegetarian Wellness',
+                          item_indices: [2, 7], // Buddha Bowl + Fruit Parfait
+                          rationale: 'Nutrient-rich plant-based options with natural sweetness'
+                        },
+                        {
+                          title: 'Balanced Indulgence',
+                          item_indices: [1, 6], // Caesar Salad + Chocolate Cake
+                          rationale: 'Light main course with satisfying dessert, great for moderate hunger'
                         }
                       ],
-                      notes: 'Sample menu data for demonstration purposes. All nutrition values are estimates.'
+                      notes: 'Demo menu featuring a variety of healthy options. Nutrition values are estimates based on typical restaurant portions.'
                     };
-                    console.log('✅ STEP 4 COMPLETE: Mock analysis created');
-                    console.log('📊 Analysis has items:', mockAnalysis.items.length);
-                    console.log('📊 Analysis has health_rank:', mockAnalysis.health_rank.length);
-                    console.log('📊 Analysis has combos:', mockAnalysis.combos.length);
+                    console.log('✅ STEP 6 COMPLETE: Mock analysis created');
                     
-                    console.log('🔄 STEP 5: Setting React state variables...');
-                    // Set the analysis directly (no image needed)
+                    console.log('🔄 STEP 7: Setting analysis state...');
                     setAnalysis(mockAnalysis);
-                    console.log('✅ setAnalysis() called');
+                    console.log('✅ STEP 7 COMPLETE: Analysis state updated');
                     
-                    // Don't set image states - just the analysis
-                    // setImageUri('demo-menu-loaded'); // Removed
-                    // setImageBase64('demo-data-loaded'); // Removed
+                    console.log('✅ Demo menu loaded successfully with mock image and realistic data!');
                     
-                    console.log('✅ STEP 5 COMPLETE: Analysis state updated');
-                    console.log('✅ Demo menu loaded successfully with sample data!');
-                    
-                    // Debug: Check if analysis was set
-                    setTimeout(() => {
-                      console.log('🔍 DEBUG: Analysis should have items:', mockAnalysis.items.length);
-                    }, 100);
+                    // Clear any previous errors
+                    setError(null);
                     
                   } catch (e: any) {
-                    console.error('❌ Demo menu failed at step:', e);
-                    console.error('❌ Error details:', e.message);
-                    console.error('❌ Error stack:', e.stack);
+                    console.error('❌ Demo menu failed:', e);
                     setError(`Demo menu failed: ${e.message}`);
                   }
                 }}
@@ -1277,7 +1282,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                       </Text>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 16 }}>
-                          Total: ${currency}{(total)}
+                          Total: {currency(total)}
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                           {Math.round(macros.calories)} kcal
@@ -1419,7 +1424,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: colors.success, fontSize: 24, fontWeight: '700', marginBottom: 4 }}>
-                    ${currency}{(sumPrice(analysis.items, analysis.health_rank.slice(0, 3)))}
+                    {currency(sumPrice(analysis.items, analysis.health_rank.slice(0, 3)))}
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
                     Total Cost{'\n'}(Top 3 Recommendations)
