@@ -215,6 +215,90 @@ function arrayBufferToBase64(ab: ArrayBuffer): string {
   return out;
 }
 
+// Generate hunger-aware demo analysis (applies same logic as API calls)
+const generateHungerAwareDemoAnalysis = (hungerLevel: HungerLevel): Analysis => {
+  // Same hunger context logic as analyseMenu function
+  const hungerContext = hungerLevel === 'light' ? 'small portions, light meals' : 
+                       hungerLevel === 'moderate' ? 'standard portions, balanced meals' : 
+                       'larger portions, filling meals';
+  
+  // Reuse existing sample items
+  const sampleItems: MenuItem[] = [
+    { name: 'Grilled Salmon with Quinoa', calories: 420, protein_g: 38, carbs_g: 25, fat_g: 18, price: 18, description: 'Fresh Atlantic salmon with herb quinoa and seasonal vegetables' },
+    { name: 'Chicken Caesar Salad', calories: 380, protein_g: 32, carbs_g: 15, fat_g: 22, price: 14, description: 'Romaine lettuce, parmesan, croutons with light caesar dressing' },
+    { name: 'Vegetarian Buddha Bowl', calories: 320, protein_g: 12, carbs_g: 45, fat_g: 14, price: 12, description: 'Brown rice, roasted vegetables, avocado, and tahini sauce' },
+    { name: 'Beef Tenderloin Steak', calories: 580, protein_g: 45, carbs_g: 8, fat_g: 38, price: 28, description: '8oz grass-fed beef with garlic mashed potatoes' },
+    { name: 'Mushroom Risotto', calories: 420, protein_g: 8, carbs_g: 68, fat_g: 16, price: 16, description: 'Creamy arborio rice with wild mushrooms and parmesan' },
+    { name: 'Grilled Chicken Breast', calories: 350, protein_g: 42, carbs_g: 12, fat_g: 16, price: 15, description: 'Herb-marinated chicken with steamed broccoli' },
+    { name: 'Chocolate Lava Cake', calories: 380, protein_g: 6, carbs_g: 45, fat_g: 20, price: 8, description: 'Warm chocolate cake with molten center and vanilla ice cream' },
+    { name: 'Fresh Fruit Parfait', calories: 220, protein_g: 8, carbs_g: 38, fat_g: 6, price: 7, description: 'Greek yogurt with seasonal berries and granola' }
+  ];
+  
+  // Apply hunger-based filtering and ranking
+  let filteredItems = [...sampleItems];
+  let healthRank = rankItems(filteredItems);
+  
+  if (hungerLevel === 'light') {
+    // For light hunger: prioritize lower calorie, lighter items
+    filteredItems = sampleItems.filter(item => (item.calories || 0) <= 400);
+    healthRank = rankItems(filteredItems);
+  } else if (hungerLevel === 'very') {
+    // For very hungry: prioritize higher calorie, more filling items
+    filteredItems = sampleItems.filter(item => (item.calories || 0) >= 350);
+    healthRank = rankItems(filteredItems);
+  }
+  // For moderate hunger: use all items as-is
+  
+  // Create hunger-appropriate combos
+  const combos = hungerLevel === 'light' ? [
+    {
+      title: 'Light & Fresh Combo',
+      item_indices: [1, 7], // Caesar Salad + Fruit Parfait
+      rationale: 'Perfect light meal with protein and natural sweetness, ideal for small appetite'
+    },
+    {
+      title: 'Vegetarian Light Plate',
+      item_indices: [2, 7], // Buddha Bowl + Fruit Parfait
+      rationale: 'Nutrient-rich plant-based options, satisfying but not overwhelming'
+    }
+  ] : hungerLevel === 'very' ? [
+    {
+      title: 'Protein Power Combo',
+      item_indices: [0, 3], // Salmon + Beef Steak
+      rationale: 'High-quality protein sources with substantial portions, perfect for large appetite'
+    },
+    {
+      title: 'Filling Feast',
+      item_indices: [3, 4], // Beef Steak + Mushroom Risotto
+      rationale: 'Hearty main course with creamy risotto, great for very hungry diners'
+    }
+  ] : [
+    {
+      title: 'Protein Power Combo',
+      item_indices: [0, 1], // Salmon + Chicken Salad
+      rationale: 'High-quality protein sources with balanced nutrition, perfect for fitness goals'
+    },
+    {
+      title: 'Vegetarian Wellness',
+      item_indices: [2, 7], // Buddha Bowl + Fruit Parfait
+      rationale: 'Nutrient-rich plant-based options with natural sweetness'
+    },
+    {
+      title: 'Balanced Indulgence',
+      item_indices: [1, 6], // Caesar Salad + Chocolate Cake
+      rationale: 'Light main course with satisfying dessert, great for moderate hunger'
+    }
+  ];
+  
+  return {
+    items: filteredItems,
+    currency: '$',
+    health_rank: healthRank,
+    combos,
+    notes: `Demo menu featuring ${hungerContext}. Nutrition values are estimates based on typical restaurant portions. Hunger level: ${hungerLevel}.`
+  };
+};
+
 // ---------- Main Component ----------
 
 export default function App() {
@@ -225,6 +309,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [hungerLevel, setHungerLevel] = useState<HungerLevel>('moderate');
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
   
   // Calculate displayTotal for top 3 recommendations (accessible to all sections)
@@ -246,6 +331,15 @@ export default function App() {
       console.log('API key loading handled automatically');
     }
   }, []);
+  
+  // Watch for hunger level changes and update demo data automatically
+  React.useEffect(() => {
+    if (isDemoMode && analysis) {
+      // Regenerate demo analysis with new hunger level
+      const newDemoAnalysis = generateHungerAwareDemoAnalysis(hungerLevel);
+      setAnalysis(newDemoAnalysis);
+    }
+  }, [hungerLevel, isDemoMode, analysis]);
   
   // Generate accurate dietary information based on actual menu data
   const generateDietaryInfo = (items: MenuItem[]) => {
@@ -922,64 +1016,21 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                     const mockImageUri = require('./assets/home-food-menu.jpg');
                     console.log('✅ STEP 1 COMPLETE: Mock image loaded from assets');
                     
-                    console.log('🔄 STEP 2: Converting image to base64...');
-                    // For demo purposes, we'll create a mock base64 string
-                    // In a real implementation, you'd convert the actual image
-                    const mockBase64 = 'mock-base64-data-for-demo';
-                    console.log('✅ STEP 2 COMPLETE: Mock base64 created');
-                    
-                    console.log('🔄 STEP 3: Setting image states...');
+                    console.log('🔄 STEP 2: Setting image states...');
                     setImageUri(mockImageUri);
-                    setImageBase64(mockBase64);
-                    console.log('✅ STEP 3 COMPLETE: Image states set');
+                    // For demo purposes, we'll use a valid base64 placeholder
+                    // This is a minimal valid base64 string representing a 1x1 transparent PNG
+                    setImageBase64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+                    setIsDemoMode(true);
+                    console.log('✅ STEP 2 COMPLETE: Image states set');
                     
-                    console.log('🔄 STEP 4: Creating sample menu items...');
-                    // Create realistic sample data that matches a typical menu
-                    const sampleItems: MenuItem[] = [
-                      { name: 'Grilled Salmon with Quinoa', calories: 420, protein_g: 38, carbs_g: 25, fat_g: 18, price: 18, description: 'Fresh Atlantic salmon with herb quinoa and seasonal vegetables' },
-                      { name: 'Chicken Caesar Salad', calories: 380, protein_g: 32, carbs_g: 15, fat_g: 22, price: 14, description: 'Romaine lettuce, parmesan, croutons with light caesar dressing' },
-                      { name: 'Vegetarian Buddha Bowl', calories: 320, protein_g: 12, carbs_g: 45, fat_g: 14, price: 12, description: 'Brown rice, roasted vegetables, avocado, and tahini sauce' },
-                      { name: 'Beef Tenderloin Steak', calories: 580, protein_g: 45, carbs_g: 8, fat_g: 38, price: 28, description: '8oz grass-fed beef with garlic mashed potatoes' },
-                      { name: 'Mushroom Risotto', calories: 420, protein_g: 8, carbs_g: 68, fat_g: 16, price: 16, description: 'Creamy arborio rice with wild mushrooms and parmesan' },
-                      { name: 'Grilled Chicken Breast', calories: 350, protein_g: 42, carbs_g: 12, fat_g: 16, price: 15, description: 'Herb-marinated chicken with steamed broccoli' },
-                      { name: 'Chocolate Lava Cake', calories: 380, protein_g: 6, carbs_g: 45, fat_g: 20, price: 8, description: 'Warm chocolate cake with molten center and vanilla ice cream' },
-                      { name: 'Fresh Fruit Parfait', calories: 220, protein_g: 8, carbs_g: 38, fat_g: 6, price: 7, description: 'Greek yogurt with seasonal berries and granola' }
-                    ];
-                    console.log('✅ STEP 4 COMPLETE: Sample items created, count:', sampleItems.length);
+                    console.log('🔄 STEP 3: Generating hunger-aware demo analysis...');
+                    const mockAnalysis = generateHungerAwareDemoAnalysis(hungerLevel);
+                    console.log('✅ STEP 3 COMPLETE: Demo analysis generated with hunger level:', hungerLevel);
                     
-                    console.log('🔄 STEP 5: Calculating health rankings...');
-                    const healthRank = rankItems(sampleItems);
-                    console.log('✅ STEP 5 COMPLETE: Health ranking calculated');
-                    
-                    console.log('🔄 STEP 6: Creating mock analysis...');
-                    const mockAnalysis: Analysis = {
-                      items: sampleItems,
-                      currency: '$',
-                      health_rank: healthRank,
-                      combos: [
-                        {
-                          title: 'Protein Power Combo',
-                          item_indices: [0, 1], // Salmon + Chicken Salad
-                          rationale: 'High-quality protein sources with balanced nutrition, perfect for fitness goals'
-                        },
-                        {
-                          title: 'Vegetarian Wellness',
-                          item_indices: [2, 7], // Buddha Bowl + Fruit Parfait
-                          rationale: 'Nutrient-rich plant-based options with natural sweetness'
-                        },
-                        {
-                          title: 'Balanced Indulgence',
-                          item_indices: [1, 6], // Caesar Salad + Chocolate Cake
-                          rationale: 'Light main course with satisfying dessert, great for moderate hunger'
-                        }
-                      ],
-                      notes: 'Demo menu featuring a variety of healthy options. Nutrition values are estimates based on typical restaurant portions.'
-                    };
-                    console.log('✅ STEP 6 COMPLETE: Mock analysis created');
-                    
-                    console.log('🔄 STEP 7: Setting analysis state...');
+                    console.log('🔄 STEP 4: Setting analysis state...');
                     setAnalysis(mockAnalysis);
-                    console.log('✅ STEP 7 COMPLETE: Analysis state updated');
+                    console.log('✅ STEP 4 COMPLETE: Analysis state updated');
                     
                     console.log('✅ Demo menu loaded successfully with mock image and realistic data!');
                     
@@ -1009,7 +1060,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
               
               {imageUri && (
               <TouchableOpacity
-                onPress={() => { setImageUri(null); setImageBase64(null); setAnalysis(null); }}
+                onPress={() => { setImageUri(null); setImageBase64(null); setAnalysis(null); setIsDemoMode(false); }}
                 style={{
                   flex: 1,
                   backgroundColor: colors.danger,
@@ -1032,9 +1083,9 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
         {/* Analyze Button */}
         <TouchableOpacity
           onPress={analyseMenu}
-          disabled={!imageUri || !imageBase64 || loading}
+          disabled={!imageUri || !imageBase64 || loading || isDemoMode}
           style={{
-            backgroundColor: !imageUri || !imageBase64 || loading ? (isDarkMode ? '#555555' : '#bdc3c7') : colors.success,
+            backgroundColor: !imageUri || !imageBase64 || loading || isDemoMode ? (isDarkMode ? '#555555' : '#bdc3c7') : colors.success,
             paddingVertical: 16,
             paddingHorizontal: 24,
             borderRadius: 16,
