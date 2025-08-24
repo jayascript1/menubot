@@ -908,80 +908,6 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
           </Text>
         </View>
 
-        {/* Hunger Level Selection */}
-        <View style={{ 
-          backgroundColor: colors.card, 
-          borderRadius: 16, 
-          padding: 20, 
-          marginBottom: 20, 
-          shadowColor: colors.shadow, 
-          shadowOffset: { width: 0, height: 2 }, 
-          shadowOpacity: 0.1, 
-          shadowRadius: 8, 
-          elevation: 3,
-          borderWidth: 1,
-          borderColor: colors.border
-        }}>
-          <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 16 }}>Hunger Level</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {[
-              { level: 'light' as HungerLevel, label: 'Light Hunger', subtitle: '2-3', color: '#3498db' },
-              { level: 'moderate' as HungerLevel, label: 'Moderate Hunger', subtitle: '3-4', color: '#f39c12' },
-              { level: 'very' as HungerLevel, label: 'Very Hungry', subtitle: '4-6', color: '#e74c3c' }
-            ].map(({ level, label, subtitle, color }) => (
-              <TouchableOpacity
-                key={level}
-                onPress={() => setHungerLevel(level)}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  padding: 16,
-                  marginHorizontal: 4,
-                  borderRadius: 12,
-                  backgroundColor: hungerLevel === level ? color : (isDarkMode ? '#2a2a2a' : '#ecf0f1'),
-                  borderWidth: 2,
-                  borderColor: hungerLevel === level ? color : 'transparent'
-                }}
-              >
-                <View style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  backgroundColor: hungerLevel === level ? 'white' : (isDarkMode ? '#555555' : '#bdc3c7'),
-                  marginBottom: 8,
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  {hungerLevel === level && (
-                    <View style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: color
-                    }} />
-                  )}
-                </View>
-                <Text style={{
-                  color: hungerLevel === level ? 'white' : colors.text,
-                  fontSize: 14,
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  marginBottom: 4
-                }}>
-                  {label}
-                </Text>
-                <Text style={{
-                  color: hungerLevel === level ? 'white' : colors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: '500'
-                }}>
-                  {subtitle}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         {/* Menu Camera Section */}
         <View style={{ 
           backgroundColor: colors.card, 
@@ -1166,6 +1092,81 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                 <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>Delete</Text>
               </TouchableOpacity>
             )}
+          </View>
+        </View>
+
+
+                {/* Hunger Level Selection */}
+                <View style={{ 
+          backgroundColor: colors.card, 
+          borderRadius: 16, 
+          padding: 20, 
+          marginBottom: 20, 
+          shadowColor: colors.shadow, 
+          shadowOffset: { width: 0, height: 2 }, 
+          shadowOpacity: 0.1, 
+          shadowRadius: 8, 
+          elevation: 3,
+          borderWidth: 1,
+          borderColor: colors.border
+        }}>
+          <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 16 }}>Hunger Level</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {[
+              { level: 'light' as HungerLevel, label: 'Light Hunger', subtitle: '2-3', color: '#3498db' },
+              { level: 'moderate' as HungerLevel, label: 'Moderate Hunger', subtitle: '3-4', color: '#f39c12' },
+              { level: 'very' as HungerLevel, label: 'Very Hungry', subtitle: '4-6', color: '#e74c3c' }
+            ].map(({ level, label, subtitle, color }) => (
+              <TouchableOpacity
+                key={level}
+                onPress={() => setHungerLevel(level)}
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  padding: 16,
+                  marginHorizontal: 4,
+                  borderRadius: 12,
+                  backgroundColor: hungerLevel === level ? color : (isDarkMode ? '#2a2a2a' : '#ecf0f1'),
+                  borderWidth: 2,
+                  borderColor: hungerLevel === level ? color : 'transparent'
+                }}
+              >
+                <View style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: hungerLevel === level ? 'white' : (isDarkMode ? '#555555' : '#bdc3c7'),
+                  marginBottom: 8,
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  {hungerLevel === level && (
+                    <View style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: color
+                    }} />
+                  )}
+                </View>
+                <Text style={{
+                  color: hungerLevel === level ? 'white' : colors.text,
+                  fontSize: 14,
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  marginBottom: 4
+                }}>
+                  {label}
+                </Text>
+                <Text style={{
+                  color: hungerLevel === level ? 'white' : colors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: '500'
+                }}>
+                  {subtitle}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
