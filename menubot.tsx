@@ -167,8 +167,8 @@ export function sumPrice(items: MenuItem[], indices: number[]): { amount: number
       
       const numPrice = parseFloat(price.replace(/[£$€¥₹₽₩₪₨₦₡₱₲₴₸₺₼₾₿]/g, ''));
       total += (isNaN(numPrice) ? 0 : numPrice);
-    } else {
-      total += (price || 0);
+    } else if (typeof price === 'number') {
+      total += price;
     }
   });
   
@@ -215,37 +215,116 @@ function arrayBufferToBase64(ab: ArrayBuffer): string {
   return out;
 }
 
-// Generate hunger-aware demo analysis (applies same logic as API calls)
-const generateHungerAwareDemoAnalysis = (hungerLevel: HungerLevel): Analysis => {
+// Hunger-specific menu data with completely different items for each level
+const HUNGER_MENUS = {
+  light: {
+    items: [
+      { name: 'Chicken Satay', calories: 280, protein_g: 25, carbs_g: 15, fat_g: 18, price: '$5', description: 'Grilled chicken skewers with peanut sauce' },
+      { name: 'Vegetable Stir-fry', calories: 180, protein_g: 8, carbs_g: 22, fat_g: 6, price: '$8', description: 'Fresh vegetables stir-fried in light sauce' },
+      { name: 'Fried Banana', calories: 220, protein_g: 2, carbs_g: 28, fat_g: 8, price: '$8', description: 'Sweet fried banana dessert' },
+      { name: 'Lemon Meringue Pie', calories: 320, protein_g: 4, carbs_g: 45, fat_g: 12, price: '$6', description: 'Tangy lemon pie with fluffy meringue' },
+      { name: 'Cheesecake Slice', calories: 260, protein_g: 6, carbs_g: 25, fat_g: 14, price: '$7', description: 'Creamy cheesecake slice' }
+    ],
+    health_rank: [1, 0, 4, 2, 3], // Vegetable Stir-fry, Chicken Satay, Lemon Pie, Cheesecake, Fried Banana
+    combos: [
+      {
+        title: 'Light & Fresh Combo',
+        item_indices: [0, 1], // Chicken Satay + Vegetable Stir-fry
+        rationale: 'Perfect light meal with lean protein and vegetables, ideal for small appetite. Total: 460 cal'
+      },
+      {
+        title: 'Sweet Treat Combo',
+        item_indices: [2, 4], // Fried Banana + Cheesecake
+        rationale: 'Light dessert options, satisfying but not overwhelming. Total: 480 cal'
+      }
+    ],
+    currency: '$',
+    notes: 'Light menu featuring smaller portions (180-320 cal) and lighter dishes, perfect for small appetite. Top pick: Vegetable Stir-fry for low calories and nutrients. Hunger level: light.'
+  },
+  moderate: {
+    items: [
+      { name: 'Grilled Chicken Breast', calories: 350, protein_g: 42, carbs_g: 12, fat_g: 16, price: '$12', description: 'Herb-marinated chicken with steamed broccoli' },
+      { name: 'Fried Rice', calories: 380, protein_g: 8, carbs_g: 65, fat_g: 12, price: '$10', description: 'Stir-fried rice with vegetables and egg' },
+      { name: 'Spaghetti Bolognese', calories: 420, protein_g: 18, carbs_g: 58, fat_g: 16, price: '$10', description: 'Pasta with meat sauce and parmesan' },
+      { name: 'Margherita Pizza', calories: 480, protein_g: 16, carbs_g: 62, fat_g: 20, price: '$10', description: 'Classic pizza with tomato, mozzarella, and basil' },
+      { name: 'Chicken Alfredo Pasta', calories: 520, protein_g: 22, carbs_g: 58, fat_g: 24, price: '$12', description: 'Creamy pasta with grilled chicken' },
+      { name: 'Meat Burger With Fries', calories: 580, protein_g: 28, carbs_g: 52, fat_g: 32, price: '$10', description: 'Beef burger with fries on the side' },
+      { name: 'Chocolate Lava Cake', calories: 380, protein_g: 6, carbs_g: 45, fat_g: 20, price: '$7', description: 'Warm chocolate cake with molten center' },
+      { name: 'Lumpur Cake', calories: 320, protein_g: 4, carbs_g: 42, fat_g: 16, price: '$8', description: 'Traditional Malaysian cake' }
+    ],
+    health_rank: [0, 1, 2, 3, 4, 5, 6, 7], // Chicken Breast, Fried Rice, Spaghetti, Pizza, Alfredo, Burger, Lava Cake, Lumpur Cake
+    combos: [
+      {
+        title: 'Protein Power Combo',
+        item_indices: [0, 1], // Chicken Breast + Fried Rice
+        rationale: 'High-quality protein with balanced carbs, perfect for fitness goals. Total: 730 cal'
+      },
+      {
+        title: 'Italian Classic',
+        item_indices: [2, 3], // Spaghetti + Pizza
+        rationale: 'Classic Italian dishes, great for moderate hunger. Total: 900 cal'
+      },
+      {
+        title: 'Comfort Food',
+        item_indices: [4, 5], // Alfredo + Burger
+        rationale: 'Hearty comfort food, satisfying for moderate appetite. Total: 1100 cal'
+      }
+    ],
+    currency: '$',
+    notes: 'Balanced menu featuring standard portions (320-580 cal) and diverse options. Top pick: Grilled Chicken Breast for lean protein. Hunger level: moderate.'
+  },
+  very: {
+    items: [
+      { name: 'Meat Balls', calories: 680, protein_g: 45, carbs_g: 25, fat_g: 42, price: '$15', description: 'Large meatballs in tomato sauce' },
+      { name: 'Fried Chicken', calories: 720, protein_g: 38, carbs_g: 35, fat_g: 48, price: '$19', description: 'Crispy fried chicken pieces' },
+      { name: 'Noodle', calories: 580, protein_g: 18, carbs_g: 85, fat_g: 22, price: '$13', description: 'Stir-fried noodles with vegetables' },
+      { name: 'Meat Lasagna', calories: 640, protein_g: 32, carbs_g: 45, fat_g: 38, price: '$12', description: 'Layered pasta with meat sauce and cheese' },
+      { name: 'BBQ Pulled Pork Sandwich', calories: 580, protein_g: 28, carbs_g: 42, fat_g: 32, price: '$9', description: 'Pulled pork with BBQ sauce on bun' },
+      { name: 'Shrimp Scampi', calories: 520, protein_g: 36, carbs_g: 38, fat_g: 26, price: '$13', description: 'Shrimp in garlic butter sauce with pasta' }
+    ],
+    health_rank: [5, 4, 3, 2, 1, 0], // Shrimp Scampi, Pulled Pork, Lasagna, Noodle, Fried Chicken, Meat Balls
+    combos: [
+      {
+        title: 'Protein Power Combo',
+        item_indices: [0, 2], // Meat Balls + Lasagna
+        rationale: 'High-quality protein sources with substantial portions, perfect for large appetite. Total: 1320 cal'
+      },
+      {
+        title: 'Filling Feast',
+        item_indices: [1, 3], // Fried Chicken + Noodle
+        rationale: 'Hearty main course with crispy chicken and noodles, great for very hungry diners. Total: 1300 cal'
+      }
+    ],
+    currency: '$',
+    notes: 'Hearty menu featuring larger portions (520-720 cal) and filling dishes, perfect for substantial hunger. Top pick: Shrimp Scampi for protein and moderate calories. Hunger level: very hungry.'
+  }
+};
+
+// Apply hunger-aware logic to any analysis data (reusable function)
+const applyHungerAwareLogic = (analysis: Analysis, hungerLevel: HungerLevel): Analysis => {
   // Same hunger context logic as analyseMenu function
   const hungerContext = hungerLevel === 'light' ? 'small portions, light meals' : 
                        hungerLevel === 'moderate' ? 'standard portions, balanced meals' : 
                        'larger portions, filling meals';
   
-  // Reuse existing sample items
-  const sampleItems: MenuItem[] = [
-    { name: 'Grilled Salmon with Quinoa', calories: 420, protein_g: 38, carbs_g: 25, fat_g: 18, price: 18, description: 'Fresh Atlantic salmon with herb quinoa and seasonal vegetables' },
-    { name: 'Chicken Caesar Salad', calories: 380, protein_g: 32, carbs_g: 15, fat_g: 22, price: 14, description: 'Romaine lettuce, parmesan, croutons with light caesar dressing' },
-    { name: 'Vegetarian Buddha Bowl', calories: 320, protein_g: 12, carbs_g: 45, fat_g: 14, price: 12, description: 'Brown rice, roasted vegetables, avocado, and tahini sauce' },
-    { name: 'Beef Tenderloin Steak', calories: 580, protein_g: 45, carbs_g: 8, fat_g: 38, price: 28, description: '8oz grass-fed beef with garlic mashed potatoes' },
-    { name: 'Mushroom Risotto', calories: 420, protein_g: 8, carbs_g: 68, fat_g: 16, price: 16, description: 'Creamy arborio rice with wild mushrooms and parmesan' },
-    { name: 'Grilled Chicken Breast', calories: 350, protein_g: 42, carbs_g: 12, fat_g: 16, price: 15, description: 'Herb-marinated chicken with steamed broccoli' },
-    { name: 'Chocolate Lava Cake', calories: 380, protein_g: 6, carbs_g: 45, fat_g: 20, price: 8, description: 'Warm chocolate cake with molten center and vanilla ice cream' },
-    { name: 'Fresh Fruit Parfait', calories: 220, protein_g: 8, carbs_g: 38, fat_g: 6, price: 7, description: 'Greek yogurt with seasonal berries and granola' }
-  ];
-  
   // Apply hunger-based filtering and ranking
-  let filteredItems = [...sampleItems];
-  let healthRank = rankItems(filteredItems);
+  let filteredItems = [...analysis.items];
+  let healthRank = [...analysis.health_rank];
   
   if (hungerLevel === 'light') {
     // For light hunger: prioritize lower calorie, lighter items
-    filteredItems = sampleItems.filter(item => (item.calories || 0) <= 400);
-    healthRank = rankItems(filteredItems);
+    const lightItems = analysis.items.filter(item => (item.calories || 0) <= 400);
+    if (lightItems.length > 0) {
+      filteredItems = lightItems;
+      healthRank = rankItems(filteredItems);
+    }
   } else if (hungerLevel === 'very') {
     // For very hungry: prioritize higher calorie, more filling items
-    filteredItems = sampleItems.filter(item => (item.calories || 0) >= 350);
-    healthRank = rankItems(filteredItems);
+    const heavyItems = analysis.items.filter(item => (item.calories || 0) >= 350);
+    if (heavyItems.length > 0) {
+      filteredItems = heavyItems;
+      healthRank = rankItems(filteredItems);
+    }
   }
   // For moderate hunger: use all items as-is
   
@@ -253,49 +332,53 @@ const generateHungerAwareDemoAnalysis = (hungerLevel: HungerLevel): Analysis => 
   const combos = hungerLevel === 'light' ? [
     {
       title: 'Light & Fresh Combo',
-      item_indices: [1, 7], // Caesar Salad + Fruit Parfait
+      item_indices: [0, 1], // First two light items
       rationale: 'Perfect light meal with protein and natural sweetness, ideal for small appetite'
     },
     {
       title: 'Vegetarian Light Plate',
-      item_indices: [2, 7], // Buddha Bowl + Fruit Parfait
+      item_indices: [2, 3], // Next two light items
       rationale: 'Nutrient-rich plant-based options, satisfying but not overwhelming'
     }
   ] : hungerLevel === 'very' ? [
     {
       title: 'Protein Power Combo',
-      item_indices: [0, 3], // Salmon + Beef Steak
+      item_indices: [0, 1], // First two heavy items
       rationale: 'High-quality protein sources with substantial portions, perfect for large appetite'
     },
     {
       title: 'Filling Feast',
-      item_indices: [3, 4], // Beef Steak + Mushroom Risotto
-      rationale: 'Hearty main course with creamy risotto, great for very hungry diners'
+      item_indices: [1, 2], // Next two heavy items
+      rationale: 'Hearty main course with creamy sides, great for very hungry diners'
     }
-  ] : [
-    {
-      title: 'Protein Power Combo',
-      item_indices: [0, 1], // Salmon + Chicken Salad
-      rationale: 'High-quality protein sources with balanced nutrition, perfect for fitness goals'
-    },
-    {
-      title: 'Vegetarian Wellness',
-      item_indices: [2, 7], // Buddha Bowl + Fruit Parfait
-      rationale: 'Nutrient-rich plant-based options with natural sweetness'
-    },
-    {
-      title: 'Balanced Indulgence',
-      item_indices: [1, 6], // Caesar Salad + Chocolate Cake
-      rationale: 'Light main course with satisfying dessert, great for moderate hunger'
-    }
-  ];
+  ] : analysis.combos; // For moderate hunger: use original combos
   
   return {
+    ...analysis,
     items: filteredItems,
-    currency: '$',
     health_rank: healthRank,
     combos,
-    notes: `Demo menu featuring ${hungerContext}. Nutrition values are estimates based on typical restaurant portions. Hunger level: ${hungerLevel}.`
+    notes: `${analysis.notes} Hunger level: ${hungerLevel}.`
+  };
+};
+
+// Generate hunger-aware demo analysis (applies same logic as API calls)
+const generateHungerAwareDemoAnalysis = (hungerLevel: HungerLevel): Analysis => {
+  // Get the appropriate menu for the current hunger level
+  const hungerMenu = HUNGER_MENUS[hungerLevel];
+  
+  // Ensure all items have proper currency formatting
+  const validatedItems = hungerMenu.items.map(item => ({
+    ...item,
+    price: typeof item.price === 'string' ? item.price : `$${item.price}.99`
+  }));
+  
+  return {
+    items: validatedItems,
+    currency: hungerMenu.currency,
+    health_rank: hungerMenu.health_rank,
+    combos: hungerMenu.combos,
+    notes: hungerMenu.notes
   };
 };
 
@@ -332,14 +415,20 @@ export default function App() {
     }
   }, []);
   
-  // Watch for hunger level changes and update demo data automatically
+  // Watch for hunger level changes and update analysis data automatically
   React.useEffect(() => {
-    if (isDemoMode && analysis) {
-      // Regenerate demo analysis with new hunger level
-      const newDemoAnalysis = generateHungerAwareDemoAnalysis(hungerLevel);
-      setAnalysis(newDemoAnalysis);
+    if (analysis) {
+      if (isDemoMode) {
+        // Regenerate demo analysis with new hunger level
+        const newDemoAnalysis = generateHungerAwareDemoAnalysis(hungerLevel);
+        setAnalysis(newDemoAnalysis);
+      } else {
+        // Apply hunger-aware logic to existing analysis data
+        const hungerAwareAnalysis = applyHungerAwareLogic(analysis, hungerLevel);
+        setAnalysis(hungerAwareAnalysis);
+      }
     }
-  }, [hungerLevel, isDemoMode, analysis]);
+  }, [hungerLevel, isDemoMode]); // Removed 'analysis' from dependencies to prevent infinite loop
   
   // Generate accurate dietary information based on actual menu data
   const generateDietaryInfo = (items: MenuItem[]) => {
@@ -621,7 +710,7 @@ Extract the full menu from the provided photo.
 Then infer typical portion sizes and estimate nutrition per item (kcal, protein_g, carbs_g, fat_g).
 Rank items by overall healthiness for a generally healthy adult (bias: higher protein, more fibre/veg, lower added sugar, lower saturated fat, lower kcal density; do not penalise lean fish/chicken).
 
-IMPORTANT: User hunger level is ${hungerLevel}. 
+IMPORTANT: User hunger level is ${hungerLevel} take this greatly into consideration when recommending items. 
 ${hungerLevel === 'light' ? 'Recommend smaller portions and lighter dishes.' : hungerLevel === 'very' ? 'Recommend larger portions and more filling dishes.' : 'Recommend balanced portions.'}
 
 
@@ -1544,7 +1633,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                     
                     <View style={{ marginBottom: 8 }}>
                       <Text style={{ color: colors.text, fontSize: 14, marginBottom: 4 }}>
-                        {item?.name}:
+                        {item?.name}
                       </Text>
                       <Text style={{ color: colors.danger, fontWeight: '600', fontSize: 14 }}>
                         {currency(item?.price)}
