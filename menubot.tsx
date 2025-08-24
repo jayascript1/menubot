@@ -775,7 +775,11 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
           
           {imageUri ? (
             <View style={{ borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: colors.primary, borderStyle: 'dashed', marginBottom: 16 }}>
-              <Image source={{ uri: imageUri }} style={{ width: '100%', height: 200 }} resizeMode="cover" />
+              <Image 
+                source={{ uri: imageUri }} 
+                style={{ width: '100%', height: 300, borderRadius: 12 }} 
+                resizeMode="contain" 
+              />
             </View>
           ) : (
             <View style={{ 
@@ -810,29 +814,64 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                 gap: 8
               }}
             >
-              <Text style={{ fontSize: 18, color: 'white', fontWeight: '600' }}>📷</Text>
+              <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>📷</Text>
               <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Capture</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity
-              onPress={uploadImage}
-              style={{
-                flex: 1,
-                backgroundColor: '#6c5ce7',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <Text style={{ fontSize: 18, color: 'white', fontWeight: '600' }}>📁</Text>
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Upload</Text>
-            </TouchableOpacity>
-            
-            {imageUri && (
+                          <TouchableOpacity
+                onPress={uploadImage}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#6c5ce7',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8
+                }}
+              >
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>📁</Text>
+                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Upload</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const item of clipboardItems) {
+                      if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
+                        const blob = await item.getType('image/png') || await item.getType('image/jpeg');
+                        const base64 = arrayBufferToBase64(await blob.arrayBuffer());
+                        setImageUri(`data:image/jpeg;base64,${base64}`);
+                        setImageBase64(base64);
+                        setAnalysis(null);
+                        return;
+                      }
+                    }
+                    setError('No image in clipboard');
+                  } catch (e: any) {
+                    setError('Paste failed');
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#00b894',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8
+                }}
+              >
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>📋</Text>
+                <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Paste</Text>
+              </TouchableOpacity>
+              
+              {imageUri && (
               <TouchableOpacity
                 onPress={() => { setImageUri(null); setImageBase64(null); setAnalysis(null); }}
                 style={{
@@ -847,7 +886,7 @@ Prices should be numeric in GBP. Make health_rank indices correspond to items[].
                   gap: 8
                 }}
               >
-                <Text style={{ fontSize: 18, color: 'white', fontWeight: '600' }}>🗑️</Text>
+                <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>🗑️</Text>
                 <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>Delete</Text>
               </TouchableOpacity>
             )}
