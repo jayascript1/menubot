@@ -6,7 +6,7 @@
 // Previous builds failed in sandbox due to static imports pulling Expo packages
 // from a CDN. This version:
 //   • Removes ALL static imports of Expo modules (ImagePicker/AV)
-//   • Uses dynamic imports inside functions so the bundler doesn’t fetch them
+//   • Uses dynamic imports inside functions so the bundler doesn't fetch them
 //     during build. That avoids the sandbox CDN fetch errors.
 //   • Keeps the API-key runtime resolver + mock mode for offline demos
 //   • Adds no-Node base64 utility
@@ -154,15 +154,25 @@ export function rankItems(items: MenuItem[]): number[] {
     .map((x) => x.idx);
 }
 
-export function sumPrice(items: MenuItem[], indices: number[]): number {
-  return indices.reduce((sum, i) => {
+export function sumPrice(items: MenuItem[], indices: number[]): { amount: number; currency: string } {
+  let total = 0;
+  let detectedCurrency = '$'; // default
+  
+  indices.forEach(i => {
     const price = items[i]?.price;
     if (typeof price === 'string') {
+      // Detect currency from first price
+      const currencyMatch = price.match(/[£$€¥₹₽₩₪₨₦₡₱₲₴₸₺₼₾₿]/);
+      if (currencyMatch) detectedCurrency = currencyMatch[0];
+      
       const numPrice = parseFloat(price.replace(/[£$€¥₹₽₩₪₨₦₡₱₲₴₸₺₼₾₿]/g, ''));
-      return sum + (isNaN(numPrice) ? 0 : numPrice);
+      total += (isNaN(numPrice) ? 0 : numPrice);
+    } else {
+      total += (price || 0);
     }
-    return sum + (price || 0);
-  }, 0);
+  });
+  
+  return { amount: total, currency: detectedCurrency };
 }
 
 export function sumMacros(items: MenuItem[], indices: number[]): MacroSummary {
@@ -216,6 +226,12 @@ export default function App() {
   const [speaking, setSpeaking] = useState(false);
   const [hungerLevel, setHungerLevel] = useState<HungerLevel>('moderate');
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
+  
+  // Calculate displayTotal for top 3 recommendations (accessible to all sections)
+  const displayTotal = analysis ? (() => {
+    const topThreeTotal = sumPrice(analysis.items, analysis.health_rank.slice(0, 3));
+    return `${topThreeTotal.currency}${topThreeTotal.amount.toFixed(2)}`;
+  })() : null;
   
   // Automatically load and store API key in localStorage (completely hidden from users)
   React.useEffect(() => {
@@ -644,7 +660,9 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
     const top = analysis.health_rank?.[0];
     const best = typeof top === 'number' ? analysis.items[top] : undefined;
     const combo = analysis.combos?.[0];
-          const price = combo ? currency(sumPrice(analysis.items, combo.item_indices)) : best ? currency(best.price) : '—';
+    const price = combo ? 
+      `${sumPrice(analysis.items, combo.item_indices).currency}${sumPrice(analysis.items, combo.item_indices).amount.toFixed(2)}` : 
+      best ? currency(best.price) : '—';
     const summary: MacroSummary = combo
       ? sumMacros(analysis.items, combo.item_indices)
       : best
@@ -1264,6 +1282,10 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                 {analysis.combos.map((c, i) => {
                   const total = sumPrice(analysis.items, c.item_indices);
                   const macros = sumMacros(analysis.items, c.item_indices);
+                  
+                  // Use the detected currency directly for this combo
+                  const comboTotal = `${total.currency}${total.amount.toFixed(2)}`;
+                  
                   return (
                     <View key={i} style={{ 
                       padding: 16, 
@@ -1282,7 +1304,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                       </Text>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 16 }}>
-                          Total: {currency(total)}
+                          Total: {comboTotal}
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                           {Math.round(macros.calories)} kcal
@@ -1424,7 +1446,7 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: colors.success, fontSize: 24, fontWeight: '700', marginBottom: 4 }}>
-                    {currency(sumPrice(analysis.items, analysis.health_rank.slice(0, 3)))}
+                    {displayTotal}
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
                     Total Cost{'\n'}(Top 3 Recommendations)
@@ -1530,7 +1552,7 @@ function sameMembers<T>(a: T[], b: T[]) {
 function runDevTests() {
   // Existing tests ------------------------------------------------------
   // currency formatting
-  expect('currency(5) => £5.00', currency(5) === '£5.00');
+  expect('currency(5) => $5.00', currency(5) === '$5.00');
   expect('currency(undefined) => —', currency(undefined) === '—');
 
   // ranking
@@ -1545,7 +1567,7 @@ function runDevTests() {
 
   // sums
   const total = sumPrice(items, [0, 2]);
-  expect('sumPrice 12+13=25', Math.abs(total - 25) < 1e-6);
+  expect('sumPrice 12+13=25', Math.abs(total.amount - 25) < 1e-6);
   const macros = sumMacros(items, [0, 2]);
   expect('sumMacros calories 450+420=870', macros.calories === 870);
   expect('sumMacros protein 45+35=80', macros.protein_g === 80);
@@ -1557,7 +1579,7 @@ function runDevTests() {
 
   // Additional tests ----------------------------------------------------
   // empty indices
-  expect('sumPrice with [] is 0', sumPrice(items, []) === 0);
+  expect('sumPrice with [] is 0', sumPrice(items, []).amount === 0);
   const emptyMacros = sumMacros(items, []);
   expect('sumMacros with [] is all zeros', emptyMacros.calories === 0 && emptyMacros.protein_g === 0 && emptyMacros.carbs_g === 0 && emptyMacros.fat_g === 0);
 
@@ -1583,7 +1605,7 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
 }
 
 // ---------- Security & Privacy (readme snippet) ----------
-// 1) Don’t ship your API key in client apps. This file is for rapid prototyping. Move calls to a server.
+// 1) Don't ship your API key in client apps. This file is for rapid prototyping. Move calls to a server.
 // 2) Consider a two-call pipeline for accuracy: (a) OCR & structure, (b) nutrition + combos cross-checked.
 // 3) Present estimates clearly as estimates; include allergens and dietary filters before production.
 // 4) Cache per-restaurant menus on-device to reduce cost/latency; hash image to detect duplicates.
