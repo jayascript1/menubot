@@ -230,16 +230,16 @@ const HUNGER_MENUS = {
       {
         title: 'Light & Fresh Combo',
         item_indices: [0, 1], // Chicken Satay + Vegetable Stir-fry
-        rationale: 'Perfect light meal with lean protein and vegetables, ideal for small appetite. Total: 460 cal'
+        rationale: 'Perfect light meal with lean protein and vegetables, ideal for small appetite. Total: 460 kcal'
       },
       {
         title: 'Sweet Treat Combo',
         item_indices: [2, 4], // Fried Banana + Cheesecake
-        rationale: 'Light dessert options, satisfying but not overwhelming. Total: 480 cal'
+        rationale: 'Light dessert options, satisfying but not overwhelming. Total: 480 kcal'
       }
     ],
     currency: '$',
-    notes: 'Light menu featuring smaller portions (180-320 cal) and lighter dishes, perfect for small appetite. Top pick: Vegetable Stir-fry for low calories and nutrients. Hunger level: light.'
+    notes: 'Light menu featuring smaller portions (180-320 kcal) and lighter dishes, perfect for small appetite. Top pick: Vegetable Stir-fry for low calories and nutrients. Hunger level: light.'
   },
   moderate: {
     items: [
@@ -257,21 +257,21 @@ const HUNGER_MENUS = {
       {
         title: 'Protein Power Combo',
         item_indices: [0, 1], // Chicken Breast + Fried Rice
-        rationale: 'High-quality protein with balanced carbs, perfect for fitness goals. Total: 730 cal'
+        rationale: 'High-quality protein with balanced carbs, perfect for fitness goals. Total: 730 kcal'
       },
       {
         title: 'Italian Classic',
         item_indices: [2, 3], // Spaghetti + Pizza
-        rationale: 'Classic Italian dishes, great for moderate hunger. Total: 900 cal'
+        rationale: 'Classic Italian dishes, great for moderate hunger. Total: 900 kcal'
       },
       {
         title: 'Comfort Food',
         item_indices: [4, 5], // Alfredo + Burger
-        rationale: 'Hearty comfort food, satisfying for moderate appetite. Total: 1100 cal'
+        rationale: 'Hearty comfort food, satisfying for moderate appetite. Total: 1100 kcal'
       }
     ],
     currency: '$',
-    notes: 'Balanced menu featuring standard portions (320-580 cal) and diverse options. Top pick: Grilled Chicken Breast for lean protein. Hunger level: moderate.'
+    notes: 'Balanced menu featuring standard portions (320-580 kcal) and diverse options. Top pick: Grilled Chicken Breast for lean protein. Hunger level: moderate.'
   },
   very: {
     items: [
@@ -287,16 +287,16 @@ const HUNGER_MENUS = {
       {
         title: 'Protein Power Combo',
         item_indices: [0, 2], // Meat Balls + Lasagna
-        rationale: 'High-quality protein sources with substantial portions, perfect for large appetite. Total: 1320 cal'
+        rationale: 'High-quality protein sources with substantial portions, perfect for large appetite. Total: 1320 kcal'
       },
       {
         title: 'Filling Feast',
         item_indices: [1, 3], // Fried Chicken + Noodle
-        rationale: 'Hearty main course with crispy chicken and noodles, great for very hungry diners. Total: 1300 cal'
+        rationale: 'Hearty main course with crispy chicken and noodles, great for very hungry diners. Total: 1300 kcal'
       }
     ],
     currency: '$',
-    notes: 'Hearty menu featuring larger portions (520-720 cal) and filling dishes, perfect for substantial hunger. Top pick: Shrimp Scampi for protein and moderate calories. Hunger level: very hungry.'
+    notes: 'Hearty menu featuring larger portions (520-720 kcal) and filling dishes, perfect for substantial hunger. Top pick: Shrimp Scampi for protein and moderate calories. Hunger level: very hungry.'
   }
 };
 
@@ -715,7 +715,7 @@ ${hungerLevel === 'light' ? 'Recommend smaller portions and lighter dishes.' : h
 
 
 Consider the user's hunger level: ${hungerContext}. Adjust recommendations accordingly.
-Propose 2–3 smart pairings that go well together (e.g., main + side, or 2 small plates) with short rationale.
+Propose 2–3 smart pairings that go well together (e.g., main + side, or 2 small plates) with short rationale. IMPORTANT: When mentioning total calories in rationale text, always use "kcal" as the unit (e.g., "Total: 650 kcal").
 
 IMPORTANT: Return prices with their actual currency symbols (e.g., $12.99, €15.50, £8.99) - do not strip the currency symbols.
 
@@ -1458,12 +1458,9 @@ Make health_rank indices correspond to items[]. Keep notes concise.`;
                       <Text style={{ color: colors.textSecondary, marginBottom: 12, fontSize: 14, fontStyle: 'italic' }}>
                         {c.rationale}
                       </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' }}>
                         <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 16 }}>
                           Total: {comboTotal}
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                          {Math.round(macros.calories)} kcal
                         </Text>
                       </View>
                     </View>
